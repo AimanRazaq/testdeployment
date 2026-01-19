@@ -1,48 +1,94 @@
 import React, { useState } from "react";
+import "./App.css";
 
 function App() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [staffNumber, setStaffNumber] = useState("");
   const [location, setLocation] = useState("");
-  const [message, setMessage] = useState("");
+  const [wardens, setWardens] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
 
-    const wardenData = {
+    const timestamp = new Date().toLocaleString();
+
+    const newWarden = {
       firstName,
       lastName,
       staffNumber,
-      location
+      location,
+      timestamp
     };
 
-    try {
-      const response = await fetch("https://super-space-sniffle-97g5g69gxwwqfpxvg-5000.app.github.dev/wardens", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(wardenData)
-      });
-
-      if (response.ok) {
-        setMessage("Warden saved successfully!");
-      } else {
-        setMessage("Error saving warden.");
-      }
-    } catch (error) {
-      setMessage("Cannot reach backend server.");
+    if (editingIndex !== null) {
+      // Update existing warden
+      const updated = [...wardens];
+      updated[editingIndex] = newWarden;
+      setWardens(updated);
+      setEditingIndex(null);
+    } else {
+      // Add new warden
+      setWardens([...wardens, newWarden]);
     }
 
+    // Clear form
     setFirstName("");
     setLastName("");
     setStaffNumber("");
     setLocation("");
   }
 
+  function handleDelete(index) {
+    const updated = wardens.filter((_, i) => i !== index);
+    setWardens(updated);
+  }
+
+  function handleEdit(index) {
+    const w = wardens[index];
+    setFirstName(w.firstName);
+    setLastName(w.lastName);
+    setStaffNumber(w.staffNumber);
+    setLocation(w.location);
+    setEditingIndex(index);
+  }
+
+  // Dashboard calculations
+  const totalWardens = wardens.length;
+  const uniqueLocations = new Set(wardens.map(w => w.location)).size;
+  const lastWarden = wardens[wardens.length - 1];
+
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>Fire Warden Form</h1>
+      <h1>Fire Warden Register</h1>
 
+      {/* Dashboard */}
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          marginBottom: "20px",
+          padding: "15px",
+          background: "#f0f0f0",
+          borderRadius: "8px"
+        }}
+      >
+        <div>
+          <strong>Total Wardens:</strong> {totalWardens}
+        </div>
+        <div>
+          <strong>Locations Covered:</strong> {uniqueLocations}
+        </div>
+        <div>
+          <strong>Last Added:</strong>{" "}
+          {lastWarden
+            ? `${lastWarden.firstName} ${lastWarden.lastName} (${lastWarden.location})`
+            : "None"}
+        </div>
+      </div>
+
+      {/* Form */}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -118,15 +164,50 @@ function App() {
             cursor: "pointer"
           }}
         >
-          Submit Warden
+          {editingIndex !== null ? "Update Warden" : "Submit Warden"}
         </button>
       </form>
 
-      {message && (
-        <p style={{ marginTop: "20px", color: "green", fontWeight: "bold" }}>
-          {message}
-        </p>
-      )}
+      {/* Table */}
+      <h2 style={{ marginTop: "30px" }}>Warden List</h2>
+
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginTop: "10px"
+        }}
+      >
+        <thead>
+          <tr style={{ background: "#ddd" }}>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Staff #</th>
+            <th>Location</th>
+            <th>Timestamp</th>
+            <th>Edit</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {wardens.map((w, index) => (
+            <tr key={index}>
+              <td>{w.firstName}</td>
+              <td>{w.lastName}</td>
+              <td>{w.staffNumber}</td>
+              <td>{w.location}</td>
+              <td>{w.timestamp}</td>
+              <td>
+                <button onClick={() => handleEdit(index)}>Edit</button>
+              </td>
+              <td>
+                <button onClick={() => handleDelete(index)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
